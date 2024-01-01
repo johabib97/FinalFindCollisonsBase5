@@ -15,16 +15,14 @@
 #define MAXNGPU 3
 #define MAX_THREAD 512
 #define M 625
+#define DP 21
 
 #define BASE 5
 #define NARGS 10
 static  uint32_t PRIME= pow(BASE, NARGS);
-//__device__ uint32_t MAXP= pow(BASE, NARGS);
+
 #define J1 1
-//#define J2 3
-
-#define DP 21
-
+//#define J2 3  in input
 
 
 #define TIMER_DEF     struct timeval temp_1, temp_2
@@ -32,9 +30,6 @@ static  uint32_t PRIME= pow(BASE, NARGS);
 #define TIMER_STOP    gettimeofday(&temp_2, (struct timezone*)0)
 #define TIMER_ELAPSED ((temp_2.tv_sec-temp_1.tv_sec)*1.e6+(temp_2.tv_usec-temp_1 .tv_usec))
 
-
-
-//static uint32_t PPOW[NARGS+1] ;
 
 //nvcc -I/usr/local/openmpi-4.1.4/include -L/usr/local/openmpi-4.1.4/lib -lmpi basepf.cu -o basepf
 // mpirun -np 7 basep 500 2
@@ -45,9 +40,6 @@ void cudaErrorCheck(cudaError_t error, const char * msg){
   	  exit(EXIT_FAILURE);}}
 
 __host__ __device__ uint32_t abcFunct(int32_t a, int32_t b, int32_t c){
-   	 //int a=ua;
-   	 //int b=ub;
-   	 //int c=uc;
    	 uint32_t F=b+pow(a-c,2);
    	 return F%BASE;
 }
@@ -55,11 +47,10 @@ __host__ __device__ uint32_t abcFunct(int32_t a, int32_t b, int32_t c){
 
 __host__ __device__ uint32_t baseFunct(uint32_t x, int J2, uint32_t MAXP){
     
-   	 uint32_t *arrayEquivX=(uint32_t*)malloc(sizeof(int)*NARGS);
-   	 //uint32_t MAXP=pow(BASE, NARGS);
-    uint32_t exp=MAXP;
-   	 uint32_t remnant;
-   	 uint32_t y;
+   	uint32_t *arrayEquivX=(uint32_t*)malloc(sizeof(int)*NARGS);
+    	uint32_t exp=MAXP;
+   	uint32_t remnant;
+   	uint32_t y;
 
    	 remnant=x;
 
@@ -74,10 +65,8 @@ __host__ __device__ uint32_t baseFunct(uint32_t x, int J2, uint32_t MAXP){
    	 exp=MAXP;
 
    	 for (int i=0; i<NARGS; i++){
-       		 //arrayEquivX[i]= abcFunct(arrayEquivX[i], arrayEquivX[i+1], arrayEquivX[i+j]);
-       		 //printf("(using %d) in pos %d there is %d \n", arrayEquivX[i+r], i, arrayEquivX[i]);
-       		 exp=exp/BASE;
-     	 y=y+exp*abcFunct(arrayEquivX[i], arrayEquivX[(i+J1)%NARGS], arrayEquivX[(i+J2)%NARGS]);
+       		exp=exp/BASE;
+     	 	y=y+exp*abcFunct(arrayEquivX[i], arrayEquivX[(i+J1)%NARGS], arrayEquivX[(i+J2)%NARGS]);
       		 
    	 }
    	 //printf("modulo is %d \n", exp);
@@ -86,8 +75,6 @@ __host__ __device__ uint32_t baseFunct(uint32_t x, int J2, uint32_t MAXP){
 }
 
 
-
-//findPathAndDP<<<nblocks, nthreads>>>(d_x0p, d_x,lg, n_per_proc, d_DjX0, d_DjD, d_Djsteps, d_DjC, d_nDPaux);
 __global__ void findPathAndDP(
   	  uint32_t* d_x0p,
   	  uint32_t* d_x,
@@ -224,7 +211,6 @@ int r=atoi(argv[2]);
    	 fprintf(stderr,"[ERROR] - required collisions too high for this method\n");
    	 return EXIT_FAILURE;}*/
 
-//uint32_t PRIME= pow(BASE, NARGS);
 
 //MPI initialization
 int rank, NP;
@@ -320,7 +306,7 @@ while (nCollisFinal < 1){
   	  fprintf(stderr,"[ERROR] - Cannot allocate memory\n");
   	  return EXIT_FAILURE; }
 
-  	  //printf("abt to scatter %d \n", n_per_proc);
+  	 
   	  MPI_Bcast(&nCovered,1, MPI_INT,ROOT,MPI_COMM_WORLD);
 	MPI_Scatter(x0, n_per_proc, MPI_INT, x0p, n_per_proc, MPI_INT, ROOT, MPI_COMM_WORLD);
   	  MPI_Barrier(MPI_COMM_WORLD);
