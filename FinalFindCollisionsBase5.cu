@@ -397,10 +397,9 @@ int main (int argc, char** argv) {
 				else{
 					CjA[ncjaux]=DjC[k];
 					CjB[ncjaux]=DjC[i];}
-				  ncjaux++;
-				}
-	  		}
-	  	}}
+				ncjaux++;
+			}
+	  	}}}
 	
 		if ( ncjaux!=0) printf("rank %d - no of collisions %d \n" , rank, ncjaux);    
 		
