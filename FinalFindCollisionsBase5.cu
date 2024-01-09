@@ -402,17 +402,17 @@ int main (int argc, char** argv) {
 	  		}
 	  	}}
 	
-		  if ( ncjaux!=0) printf("rank %d - no of collisions %d \n" , rank, ncjaux);    
+		if ( ncjaux!=0) printf("rank %d - no of collisions %d \n" , rank, ncjaux);    
 		
-		  //eliminates duplicates (per process)
-		  uint32_t *scjA=(uint32_t*)malloc(sizeof(int)*n_per_proc*(n_per_proc-1)/2);
-		  uint32_t *scjB=(uint32_t*)malloc(sizeof(int)*n_per_proc*(n_per_proc-1)/2);
+		//eliminates duplicates (per process)
+		uint32_t *scjA=(uint32_t*)malloc(sizeof(int)*n_per_proc*(n_per_proc-1)/2);
+		uint32_t *scjB=(uint32_t*)malloc(sizeof(int)*n_per_proc*(n_per_proc-1)/2);
 		
-		  for (int i=0; i<n_per_proc*(n_per_proc-1)/2 ; i++){
+		for (int i=0; i<n_per_proc*(n_per_proc-1)/2 ; i++){
 			  scjA[i]=0;
 			  scjB[i]=0;}
 		
-		  if (ncjaux>0){
+		if (ncjaux>0){
 			nCollisj=1;
 			scjA[0]=CjA[0];
 			scjB[0]=CjB[0];
@@ -506,127 +506,126 @@ int main (int argc, char** argv) {
 	
 		//eliminates duplicates (globally)
 		if(rank==ROOT){
-		printf("Cumulative Collis till now %d \n", nCollisFinal);
-	
-		if (nCollisT>0){
-		  	for (int i = 0; i < M*(n_per_proc-1)/2; i++){
-		  		int a=0;
-		  		int b=0;
-		  		if (CB[i]!=0){
-		      			for (int k = 0; k<i; k++){
-		          		if(CA[i]==CA[k] && CB[i]==CB[k]){
-		                  		a++;
-		                  		break;
-					}}
-		          		//printf( "a= %d on indx %d \n", a, i);
-		  		if (a==0){
-		                  	for (int h = 0;h<nCollisFinal+1;h++){
-		                  	if(CA[i]==scA[h] && CB[i]==scB[h]){
-						b++;
-		                          	break;
-					}}
-		                  	if (b==0){
-						scA[nCollisFinal+nCollisTot]=CA[i];
-						scB[nCollisFinal+nCollisTot]=CB[i];
-						printf("new Collis bw %d and %d on indx %d \n", scA[nCollisFinal+nCollisTot],
-				  scB[nCollisFinal+nCollisTot], i);
-		                          	nCollisTot++;}
-		  		  	} 	 
-		  		}
-			}
-		  	printf("nSingleRank of this iteration %d \n", nCollisTot);
-	  	}
-	    
-		//looks for new "interrank" collsions
-		int nCollisIr=0;
-		int nCollisIrT=0;
-		uint32_t *tempA=(uint32_t*)malloc(sizeof(int)*M*n_per_proc*(NP-1)/2);
-	   	uint32_t *tempB =(uint32_t*)malloc(sizeof(int)*M*n_per_proc*(NP-1)/2);
-	
-		for (int i = 0; i <M; i++){
-		if (DC[i]==0 && DD[i]!=1) break;
-		for (int k =n_per_proc+i/(n_per_proc); k<M; k++){
-			int a=1;
-			int b=1;
-		  	 
-		  	if(DC[k]==0 && DD[k]!=1) break;
-		  	if(DD[i]==DD[k]){
-	  			a=0;
-	  			b=0;
-			}
-	
-	  	  	if (a==0){
-		  		if (DC[i]==DC[k]){
-					  uint32_t *newDjC=(uint32_t*)malloc(sizeof(int)*2);
-					  uint32_t *newDjD=(uint32_t*)malloc(sizeof(int)*2);
+			printf("Cumulative Collis till now %d \n", nCollisFinal);
 		
-					  newDjC[0]=DC[i];
-					  newDjC[1]=DC[k];
-					  newDjD[0]=DD[i];
-					  newDjD[1]=DD[k];
-		
-					  FindIntermediateColl (r, DX0[i], Dsteps[i],
-						 DX0[k], Dsteps[k], newDjC, newDjD, PRIME);
-		
-					  DC[i]=newDjC[0];
-					  DC[k]=newDjC[1];
-					  DD[i]=newDjD[0];
-					  DD[k]=newDjD[1];
-		
-					  free(newDjC);
-					  free(newDjD);
-		  		}
-	  			 
-		  		if (DC[i]!=DC[k]){
-		  			for (int h = 0;h<nCollisFinal+nCollisTot+1;h++){
-		              		if((DC[i]==scA[h] && DC[k]==scB[h]) || (DC[i]==scB[h] && DC[k]==scA[h])){
-		                      		b++;
-		                      		break;
-					}}
-		              		if (b==0){
-		  				if (DC[i]<DC[k]){
-		  					tempA[nCollisIrT]=DC[i];
-		  					tempB[nCollisIrT]=DC[k];}
-		  				  else{
-		  					tempA[nCollisIrT]=DC[k];
-		  					tempB[nCollisIrT]=DC[i];}
-		  				  //printf("new interrank %d and %d Collis bw %d and %d on %d \n", i, k, tempA[nCollisIrT], tempB[nCollisIrT], DD[i]);
-		  				  nCollisIrT++;
-	  			  	}
-	          		}
-	  	  	}//a=0
-		}}
-	
-		//eliminates duplicates between new collisions
-		if (nCollisIrT>0){
-		  	nCollisIr=1;
-			scA[nCollisFinal+nCollisTot]=tempA[0];    
-			scB[nCollisFinal+nCollisTot]=tempB[0];
-		    	printf("first interrank collis bw %d and %d \n", scA[nCollisFinal+nCollisTot], scB[nCollisFinal+nCollisTot]);
-	
-	       		for (int i = 1; i < nCollisIrT; i++){
-	       			int a=0;
-	               		for (int k = 0; k<i; k++){
-	               		if(tempA[i]==tempA[k] && tempB[i]==tempB[k]){
-	                       		a++;
-	                       		break;
-				}}
-	               		if (a==0){
-	                       		scA[nCollisFinal+nCollisTot+nCollisIr]=tempA[i];
-	                       		scB[nCollisFinal+nCollisTot+nCollisIr]=tempB[i];
-	                       		printf("interrank collis bw %d and %d \n", scA[nCollisFinal+nCollisTot+nCollisIr], scB[nCollisFinal+nCollisTot+nCollisIr]);
-	                       		nCollisIr++;
+			if (nCollisT>0){
+			  	for (int i = 0; i < M*(n_per_proc-1)/2; i++){
+			  		int a=0;
+			  		int b=0;
+			  		if (CB[i]!=0){
+			      			for (int k = 0; k<i; k++){
+			          		if(CA[i]==CA[k] && CB[i]==CB[k]){
+			                  		a++;
+			                  		break;
+						}}
+			          		//printf( "a= %d on indx %d \n", a, i);
+			  		if (a==0){
+			                  	for (int h = 0;h<nCollisFinal+1;h++){
+			                  	if(CA[i]==scA[h] && CB[i]==scB[h]){
+							b++;
+			                          	break;
+						}}
+			                  	if (b==0){
+							scA[nCollisFinal+nCollisTot]=CA[i];
+							scB[nCollisFinal+nCollisTot]=CB[i];
+							printf("new Collis bw %d and %d on indx %d \n", scA[nCollisFinal+nCollisTot],
+					  scB[nCollisFinal+nCollisTot], i);
+			                          	nCollisTot++;}
+			  		  	} 	 
+			  		}
 				}
-	       		 }
-		}
-	
-		//frees on device
-		free(tempA);
-		free(tempB);
-	
-		nCollisTot=nCollisTot+nCollisIr;
-		printf("nTot of this iteration %d \n", nCollisTot);
-	
+			  	printf("nSingleRank of this iteration %d \n", nCollisTot);
+		  	}
+		    
+			//looks for new "interrank" collsions
+			int nCollisIr=0;
+			int nCollisIrT=0;
+			uint32_t *tempA=(uint32_t*)malloc(sizeof(int)*M*n_per_proc*(NP-1)/2);
+		   	uint32_t *tempB =(uint32_t*)malloc(sizeof(int)*M*n_per_proc*(NP-1)/2);
+		
+			for (int i = 0; i <M; i++){
+			if (DC[i]==0 && DD[i]!=1) break;
+			for (int k =n_per_proc+i/(n_per_proc); k<M; k++){
+				int a=1;
+				int b=1;
+			  	 
+			  	if(DC[k]==0 && DD[k]!=1) break;
+			  	if(DD[i]==DD[k]){
+		  			a=0;
+		  			b=0;
+				}
+		
+		  	  	if (a==0){
+			  		if (DC[i]==DC[k]){
+						  uint32_t *newDjC=(uint32_t*)malloc(sizeof(int)*2);
+						  uint32_t *newDjD=(uint32_t*)malloc(sizeof(int)*2);
+			
+						  newDjC[0]=DC[i];
+						  newDjC[1]=DC[k];
+						  newDjD[0]=DD[i];
+						  newDjD[1]=DD[k];
+			
+						  FindIntermediateColl (r, DX0[i], Dsteps[i],
+							 DX0[k], Dsteps[k], newDjC, newDjD, PRIME);
+			
+						  DC[i]=newDjC[0];
+						  DC[k]=newDjC[1];
+						  DD[i]=newDjD[0];
+						  DD[k]=newDjD[1];
+			
+						  free(newDjC);
+						  free(newDjD);
+			  		}
+		  			 
+			  		if (DC[i]!=DC[k]){
+			  			for (int h = 0;h<nCollisFinal+nCollisTot+1;h++){
+			              		if((DC[i]==scA[h] && DC[k]==scB[h]) || (DC[i]==scB[h] && DC[k]==scA[h])){
+			                      		b++;
+			                      		break;
+						}}
+			              		if (b==0){
+			  				if (DC[i]<DC[k]){
+			  					tempA[nCollisIrT]=DC[i];
+			  					tempB[nCollisIrT]=DC[k];}
+			  				  else{
+			  					tempA[nCollisIrT]=DC[k];
+			  					tempB[nCollisIrT]=DC[i];}
+			  				  //printf("new interrank %d and %d Collis bw %d and %d on %d \n", i, k, tempA[nCollisIrT], tempB[nCollisIrT], DD[i]);
+			  				  nCollisIrT++;
+		  			  	}
+		          		}
+		  	  	}//a=0
+			}}
+		
+			//eliminates duplicates between new collisions
+			if (nCollisIrT>0){
+			  	nCollisIr=1;
+				scA[nCollisFinal+nCollisTot]=tempA[0];    
+				scB[nCollisFinal+nCollisTot]=tempB[0];
+			    	printf("first interrank collis bw %d and %d \n", scA[nCollisFinal+nCollisTot], scB[nCollisFinal+nCollisTot]);
+		
+		       		for (int i = 1; i < nCollisIrT; i++){
+		       			int a=0;
+		               		for (int k = 0; k<i; k++){
+		               		if(tempA[i]==tempA[k] && tempB[i]==tempB[k]){
+		                       		a++;
+		                       		break;
+					}}
+		               		if (a==0){
+		                       		scA[nCollisFinal+nCollisTot+nCollisIr]=tempA[i];
+		                       		scB[nCollisFinal+nCollisTot+nCollisIr]=tempB[i];
+		                       		printf("interrank collis bw %d and %d \n", scA[nCollisFinal+nCollisTot+nCollisIr], scB[nCollisFinal+nCollisTot+nCollisIr]);
+		                       		nCollisIr++;
+					}
+		       		 }
+			}
+		
+			//frees on device
+			free(tempA);
+			free(tempB);
+		
+			nCollisTot=nCollisTot+nCollisIr;
+			printf("nTot of this iteration %d \n", nCollisTot);
 		} //ROOT
 	
 		MPI_Barrier(MPI_COMM_WORLD);
